@@ -32,17 +32,24 @@ OBJS = inv_mpu.o \
        linux_glue.o \
        mpu9150.o \
        quaternion.o \
-       vector3d.o \
-       main.o
-
-TARGET = imu
+       vector3d.o
 
 
-$(TARGET) : $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -lm -o $(TARGET) 
+all : imu imucal
 
-main.o : main.c
-	$(CC) $(CFLAGS) -I $(EMPLDIR) -I $(GLUEDIR) -I $(MPUDIR) $(DEFS) -c main.c
+
+imu : $(OBJS) imu.o
+	$(CC) $(CFLAGS) $(OBJS) imu.o -lm -o imu
+
+imucal : $(OBJS) imucal.o
+	$(CC) $(CFLAGS) $(OBJS) imucal.o -lm -o imucal
+
+	
+imu.o : imu.c
+	$(CC) $(CFLAGS) -I $(EMPLDIR) -I $(GLUEDIR) -I $(MPUDIR) $(DEFS) -c imu.c
+	
+imucal.o : imucal.c
+	$(CC) $(CFLAGS) -I $(EMPLDIR) -I $(GLUEDIR) -I $(MPUDIR) $(DEFS) -c imucal.c
 
 mpu9150.o : $(MPUDIR)/mpu9150.c
 	$(CC) $(CFLAGS) $(DEFS) -I $(EMPLDIR) -I $(GLUEDIR) -c $(MPUDIR)/mpu9150.c
@@ -64,9 +71,9 @@ inv_mpu.o : $(EMPLDIR)/inv_mpu.c
 
 
 install:
-	scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $(TARGET) root@192.168.10.112:/home/root
+	scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no imu imucal root@192.168.10.112:/home/root
 
 
 clean:
-	rm -f $(TARGET) $(OBJS) 
+	rm -f *.o imu imucal
 

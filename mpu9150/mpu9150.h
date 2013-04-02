@@ -26,16 +26,13 @@
 
 #include "quaternion.h"
 
-#define SENSOR_RANGE 4096
-
-typedef struct {
-	short range[3];
-} accelcal_t;
+#define MAG_SENSOR_RANGE 	4096
+#define ACCEL_SENSOR_RANGE 	32000
 
 typedef struct {
 	short offset[3];
 	short range[3];
-} magcal_t;
+} caldata_t;
 
 typedef struct {
 	short rawGyro[3];
@@ -46,8 +43,8 @@ typedef struct {
 	short rawMag[3];
 	unsigned long magTimestamp;
 
-	vector3d_t calibratedAccel;
-	vector3d_t calibratedMag;
+	short calibratedAccel[3];
+	short calibratedMag[3];
 
 	quaternion_t fusedQuat;
 	vector3d_t fusedEuler;
@@ -57,11 +54,14 @@ typedef struct {
 } mpudata_t;
 
 
+void mpu9150_set_debug(int on);
 int mpu9150_init(int i2c_bus, int sample_rate, int yaw_mixing_factor);
 void mpu9150_exit();
 int mpu9150_read(mpudata_t *mpu);
-void mpu9150_set_accel_cal(accelcal_t *cal);
-void mpu9150_set_mag_cal(magcal_t *cal);
+int mpu9150_read_dmp(mpudata_t *mpu);
+int mpu9150_read_mag(mpudata_t *mpu);
+void mpu9150_set_accel_cal(caldata_t *cal);
+void mpu9150_set_mag_cal(caldata_t *cal);
 
 #endif /* MPU9150_H */
 

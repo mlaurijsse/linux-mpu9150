@@ -1,3 +1,4 @@
 imu
 Makefile
-.o
+*.o
+imucal

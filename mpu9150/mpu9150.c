@@ -36,14 +36,19 @@ static int data_fusion(mpudata_t *mpu);
 static unsigned short inv_row_2_scale(const signed char *row);
 static unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx);
 
+int debug_on;
 int yaw_mixing_factor;
 
 int use_accel_cal;
-accelcal_t accel_cal_data;
+caldata_t accel_cal_data;
 
 int use_mag_cal;
-magcal_t mag_cal_data;
+caldata_t mag_cal_data;
 
+void mpu9150_set_debug(int on)
+{
+	debug_on = on;
+}
 
 int mpu9150_init(int i2c_bus, int sample_rate, int mix_factor)
 {
@@ -159,28 +164,40 @@ void mpu9150_exit()
 	// TODO: Should turn off the sensors too
 }
 
-void mpu9150_set_accel_cal(accelcal_t *cal)
+void mpu9150_set_accel_cal(caldata_t *cal)
 {
 	int i;
+	long bias[3];
 
 	if (!cal) {
 		use_accel_cal = 0;
 		return;
 	}
 
-	memcpy(&accel_cal_data, cal, sizeof(accelcal_t));
+	memcpy(&accel_cal_data, cal, sizeof(caldata_t));
 
 	for (i = 0; i < 3; i++) {
 		if (accel_cal_data.range[i] < 1)
 			accel_cal_data.range[i] = 1;
-		else if (accel_cal_data.range[i] > SENSOR_RANGE)
-			accel_cal_data.range[i] = SENSOR_RANGE;
+		else if (accel_cal_data.range[i] > ACCEL_SENSOR_RANGE)
+			accel_cal_data.range[i] = ACCEL_SENSOR_RANGE;
+
+		bias[i] = -accel_cal_data.offset[i];
 	}
+
+	if (debug_on) {
+		printf("\naccel cal (range : offset)\n");
+
+		for (i = 0; i < 3; i++)
+			printf("%d : %d\n", accel_cal_data.range[i], accel_cal_data.offset[i]);
+	}
+
+	mpu_set_accel_bias(bias);
 
 	use_accel_cal = 1;
 }
 
-void mpu9150_set_mag_cal(magcal_t *cal)
+void mpu9150_set_mag_cal(caldata_t *cal)
 {
 	int i;
 
@@ -189,24 +206,31 @@ void mpu9150_set_mag_cal(magcal_t *cal)
 		return;
 	}
 
-	memcpy(&mag_cal_data, cal, sizeof(magcal_t));
+	memcpy(&mag_cal_data, cal, sizeof(caldata_t));
 
 	for (i = 0; i < 3; i++) {
 		if (mag_cal_data.range[i] < 1)
 			mag_cal_data.range[i] = 1;
-		else if (mag_cal_data.range[i] > SENSOR_RANGE)
-			mag_cal_data.range[i] = SENSOR_RANGE;
+		else if (mag_cal_data.range[i] > MAG_SENSOR_RANGE)
+			mag_cal_data.range[i] = MAG_SENSOR_RANGE;
 
-		if (mag_cal_data.offset[i] < -SENSOR_RANGE)
-			mag_cal_data.offset[i] = -SENSOR_RANGE;
-		else if (mag_cal_data.offset[i] > SENSOR_RANGE)
-			mag_cal_data.offset[i] = SENSOR_RANGE;
+		if (mag_cal_data.offset[i] < -MAG_SENSOR_RANGE)
+			mag_cal_data.offset[i] = -MAG_SENSOR_RANGE;
+		else if (mag_cal_data.offset[i] > MAG_SENSOR_RANGE)
+			mag_cal_data.offset[i] = MAG_SENSOR_RANGE;
+	}
+
+	if (debug_on) {
+		printf("\nmag cal (range : offset)\n");
+
+		for (i = 0; i < 3; i++)
+			printf("%d : %d\n", mag_cal_data.range[i], mag_cal_data.offset[i]);
 	}
 
 	use_mag_cal = 1;
 }
 
-int mpu9150_read(mpudata_t *mpu)
+int mpu9150_read_dmp(mpudata_t *mpu)
 {
 	short sensors;
 	unsigned char more;
@@ -227,10 +251,26 @@ int mpu9150_read(mpudata_t *mpu)
 		}
 	}
 
+	return 0;
+}
+
+int mpu9150_read_mag(mpudata_t *mpu)
+{
 	if (mpu_get_compass_reg(mpu->rawMag, &mpu->magTimestamp) < 0) {
 		printf("mpu_get_compass_reg() failed\n");
 		return -1;
 	}
+
+	return 0;
+}
+
+int mpu9150_read(mpudata_t *mpu)
+{
+	if (mpu9150_read_dmp(mpu) != 0)
+		return -1;
+
+	if (mpu9150_read_mag(mpu) != 0)
+		return -1;
 
 	calibrate_data(mpu);
 
@@ -257,13 +297,13 @@ void calibrate_data(mpudata_t *mpu)
 {
 	if (use_mag_cal) {
       mpu->calibratedMag[VEC3_Y] = -(short)(((long)(mpu->rawMag[VEC3_X] - mag_cal_data.offset[VEC3_X])
-			* (long)SENSOR_RANGE) / (long)mag_cal_data.range[VEC3_X]);
+			* (long)MAG_SENSOR_RANGE) / (long)mag_cal_data.range[VEC3_X]);
 
       mpu->calibratedMag[VEC3_X] = (short)(((long)(mpu->rawMag[VEC3_Y] - mag_cal_data.offset[VEC3_Y])
-			* (long)SENSOR_RANGE) / (long)mag_cal_data.range[VEC3_Y]);
+			* (long)MAG_SENSOR_RANGE) / (long)mag_cal_data.range[VEC3_Y]);
 
       mpu->calibratedMag[VEC3_Z] = (short)(((long)(mpu->rawMag[VEC3_Z] - mag_cal_data.offset[VEC3_Z])
-			* (long)SENSOR_RANGE) / (long)mag_cal_data.range[VEC3_Z]);
+			* (long)MAG_SENSOR_RANGE) / (long)mag_cal_data.range[VEC3_Z]);
 	}
 	else {
 		mpu->calibratedMag[VEC3_Y] = -mpu->rawMag[VEC3_X];
@@ -272,13 +312,13 @@ void calibrate_data(mpudata_t *mpu)
 	}
 
 	if (use_accel_cal) {
-      mpu->calibratedAccel[VEC3_X] = -(short)(((long)mpu->rawMag[VEC3_X] * (long)SENSOR_RANGE)
+      mpu->calibratedAccel[VEC3_X] = -(short)(((long)mpu->rawAccel[VEC3_X] * (long)ACCEL_SENSOR_RANGE)
 			/ (long)accel_cal_data.range[VEC3_X]);
 
-      mpu->calibratedAccel[VEC3_Y] = (short)(((long)mpu->rawMag[VEC3_Y] * (long)SENSOR_RANGE)
+      mpu->calibratedAccel[VEC3_Y] = (short)(((long)mpu->rawAccel[VEC3_Y] * (long)ACCEL_SENSOR_RANGE)
 			/ (long)accel_cal_data.range[VEC3_Y]);
 
-      mpu->calibratedAccel[VEC3_Z] = (short)(((long)mpu->rawMag[VEC3_Z] * (long)SENSOR_RANGE)
+      mpu->calibratedAccel[VEC3_Z] = (short)(((long)mpu->rawAccel[VEC3_Z] * (long)ACCEL_SENSOR_RANGE)
 			/ (long)accel_cal_data.range[VEC3_Z]);
 	}
 	else {
