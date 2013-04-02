@@ -81,6 +81,25 @@ After that you can just type make to build the code.
 
 The resulting executable is called *imu*.
 
+  Enable i2c
+========
+
+Take a look at /etc/modules to see that the following two lines are present:
+
+i2c-bcm2708
+i2c-dev
+
+If not, add them! 
+
+To avoid having to use sudo to run the code, create a file:
+
+/etc/udev/rules.d/90-i2c.rules
+
+and add the line:
+
+KERNEL=="i2c-[0-3]",MODE="0666"
+
+then reboot to make sure everything is set correctly.
 
   Run
 ========
