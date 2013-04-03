@@ -45,10 +45,10 @@ imucal : $(OBJS) imucal.o
 	$(CC) $(CFLAGS) $(OBJS) imucal.o -lm -o imucal
 
 	
-imu.o : imu.c
+imu.o : imu.c local_defaults.h
 	$(CC) $(CFLAGS) -I $(EMPLDIR) -I $(GLUEDIR) -I $(MPUDIR) $(DEFS) -c imu.c
 	
-imucal.o : imucal.c
+imucal.o : imucal.c local_defaults.h
 	$(CC) $(CFLAGS) -I $(EMPLDIR) -I $(GLUEDIR) -I $(MPUDIR) $(DEFS) -c imucal.c
 
 mpu9150.o : $(MPUDIR)/mpu9150.c

@@ -31,10 +31,7 @@
 
 #include "mpu9150.h"
 #include "linux_glue.h"
-
-#define DEFAULT_I2C_BUS 1
-#define DEFAULT_SAMPLE_RATE_HZ	10
-#define DEFAULT_YAW_MIX_FACTOR 4
+#include "local_defaults.h"
 
 int set_cal(int mag, char *cal_file);
 void read_loop(unsigned int sample_rate);

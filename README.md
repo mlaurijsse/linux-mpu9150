@@ -1,5 +1,4 @@
-  linux-mpu9150
-========
+# linux-mpu9150
 
 An implementation of 9-axis data fusion on Linux using the [InvenSense MPU-9150 IMU][1]
 
@@ -15,7 +14,8 @@ point operations.
 Testing has been done with [Raspberry Pi][2] and [Gumstix Overo and Duovero][3] systems.
 The code should work fine with other small board systems like the [BeagleBones][4].
 
-We've been using [Sparkfun MPU9150 Breakout Boards][5] for testing this code.
+We have our own boards incorporating the MPU9150s, but we also tested with the
+[Sparkfun MPU9150 Breakout Boards][5]
 
 [1]: http://www.invensense.com/mems/gyro/nineaxis.html     "InvenSense"
 [2]: http://www.raspberrypi.org/                           "Raspberry Pi"
@@ -24,8 +24,7 @@ We've been using [Sparkfun MPU9150 Breakout Boards][5] for testing this code.
 [5]: https://www.sparkfun.com/products/11486               "Sparkfun"
 
 
-  Fetch
-========
+# Fetch
 
 Use git to fetch the linux-mpu9150 project. You may have to install *git* on your
 system first.
@@ -39,8 +38,7 @@ Then to clone the repository assuming you have an Internet connection
         git clone https://github.com/Pansenti/linux-mpu9150.git
 
 
-  Build
-========
+# Build
 
 The linux-mpu9150 code is written in C. There is a make file called *Makefile-native*
 for use when building directly on the system.
@@ -55,7 +53,7 @@ A recommendation is to create a soft-link to the make file you want to use.
         root@duovero:~/linux-mpu9150$ ln -s Makefile-native Makefile
 
 
-After that you can just type make to build the code.
+After that you can just type *make* to build the code.
 
         root@duovero:~/linux-mpu9150$ make
         gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -I eMPL -I glue -c eMPL/inv_mpu.c
@@ -72,12 +70,39 @@ After that you can just type make to build the code.
 
 The result is two executables called *imu* and *imucal*.
 
+For those using *Makefile-cross*, you will need to export an environment variable
+called *OETMP* that points to your OE temp directory (TMPDIR in build/conf/local.conf).
 
-  Enable i2c
-========
+For example:
 
- Raspberry Pi
-------
+        scott@hex:~/linux-mpu9150$ export OETMP=/oe1
+        scott@hex:~/linux-mpu9150$ ln -s Makefile-cross Makefile
+        scott@hex:~/linux-mpu9150$ make
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -I eMPL -I glue -c eMPL/inv_mpu.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -I eMPL -I glue -c eMPL/inv_mpu_dmp_motion_driver.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -I eMPL -I glue -c glue/linux_glue.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -I eMPL -I glue -c mpu9150/mpu9150.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c mpu9150/quaternion.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c mpu9150/vector3d.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -I eMPL -I glue -I mpu9150 -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c imu.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall inv_mpu.o inv_mpu_dmp_motion_driver.o linux_glue.o mpu9150.o quaternion.o vector3d.o imu.o -lm -o imu
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall -I eMPL -I glue -I mpu9150 -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c imucal.c
+        /oe1/sysroots/`uname -m`-linux/usr/bin/armv7a-vfp-neon-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc -Wall inv_mpu.o inv_mpu_dmp_motion_driver.o linux_glue.o mpu9150.o quaternion.o vector3d.o imucal.o -lm -o imucal
+
+
+### local_defaults.h
+
+You can modify some default parameter settings in *local_defaults.h* to avoid
+having to pass command line switches to the applications every run. 
+
+After modifying *local_defaults.h*, you will have to run *make* again. 
+
+The defaults in  *local_defaults.h* are for the RPi.
+
+
+# Enable i2c
+
+### Raspberry Pi
 
 The RPi Raspbian distribution does not load the I2C kernel drivers by default.
 
@@ -96,8 +121,7 @@ If you don't see output like the above, edit */etc/modules* and add these lines
 The I2C device on the RPi P1 header will be /dev/i2c-1.
 
 
- Gumstix
-------
+### Gumstix
 
 The I2C kernel driver for the Gumstix boards is usually loaded by default.
 
@@ -106,8 +130,7 @@ The I2C device on the Gumstix Overo expansion header is /dev/i2c-3.
 On the Duovero the device it is /dev/i2c-2.
 
 
- Any System
-------
+### Any System
 
 The permissions on the /dev/i2c-X device are usually set so that only the
 root user has permissions.
@@ -129,8 +152,7 @@ Reboot to make sure everything is set correctly.
 If you are running as root you don't need the udev rule.
 
 
-  Calibration
-========
+# Calibration
 
 The IMU gyros have a built in calibration mechanism, but the accelerometers
 and the magnetometer require manual calibration.
@@ -222,8 +244,7 @@ If these two files, *accelcal.txt* and *magcal.txt*, are left in the
 same directory as the *imu* program, they will be used by default.
 
 
-  Run
-========
+# Run
 
 The *imu* application is a small example to get started using 
 *linux-mpu9150* code.
@@ -260,7 +281,9 @@ up automatically.
          X: -2 Y: -62 Z: -4        ^C
 
 
-The default output of the imu program is the Euler angles, but other 
-outputs are available such as the fused quaternion and raw gyro, accel
-and mag values. See the source code.
+The default output of the *imu* program are the fused Euler angles.
+Other outputs are available such as the fused quaternion and the
+raw gyro, accel and mag values. See the source code.
+
+Keep in mind *imu* is just a demo app.
 

@@ -35,10 +35,7 @@
 
 #include "mpu9150.h"
 #include "linux_glue.h"
-
-#define DEFAULT_I2C_BUS 1
-#define DEFAULT_SAMPLE_RATE_HZ	10
-#define DEFAULT_YAW_MIX_FACTOR 4
+#include "local_defaults.h"
 
 void read_loop(unsigned int sample_rate);
 void print_accel(mpudata_t *mpu);
@@ -46,7 +43,6 @@ void print_mag(mpudata_t *mpu);
 void write_cal();
 void register_sig_handler();
 void sigint_handler(int sig);
-
 
 int done;
 short minVal[3];
