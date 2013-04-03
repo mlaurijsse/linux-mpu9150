@@ -61,7 +61,7 @@ void usage(char *argv_0)
 	printf("  -v                    Verbose messages\n");
 	printf("  -h                    Show this help\n");
 
-	printf("\nExample:\n\t%s -b3 -s20 -y10\n\n", argv_0);
+	printf("\nExample: %s -b3 -s20 -y10\n\n", argv_0);
 	
 	exit(1);
 }

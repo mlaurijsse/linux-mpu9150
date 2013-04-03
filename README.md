@@ -23,23 +23,11 @@ We've been using [Sparkfun MPU9150 Breakout Boards][5] for testing this code.
 [4]: http://beagleboard.org/                               "Beagleboard"
 [5]: https://www.sparkfun.com/products/11486               "Sparkfun"
 
-  Calibration
-========
-
-The Invensense code provides self-calibration of the gyros whenever they are
-idle more then 8 seconds.
-
-There are functions in linux-mpu9150 to accept calibration data for the 
-accelerometers and magnetometers, but currently no example implementation on 
-how to generate that data. 
-
-It's on the TODO list.
-
 
   Fetch
 ========
 
-Use git to fetch the linux-mpu9150 project. You may have to install git on your
+Use git to fetch the linux-mpu9150 project. You may have to install *git* on your
 system first.
 
 For RPi users running Raspbian, use this command
@@ -48,7 +36,7 @@ For RPi users running Raspbian, use this command
 
 Then to clone the repository assuming you have an Internet connection
 
-        git clone git://github.com/Pansenti/linux-mpu9150.git
+        git clone https://github.com/Pansenti/linux-mpu9150.git
 
 
   Build
@@ -58,7 +46,8 @@ The linux-mpu9150 code is written in C. There is a make file called *Makefile-na
 for use when building directly on the system.
 
 There is also a *Makefile-cross* makefile for use when using Yocto Project built
-tools and cross-building linux-mpu9150 on a workstation.
+tools and cross-building linux-mpu9150 on a workstation. This is more for Gumstix
+and Beagle users.
 
 A recommendation is to create a soft-link to the make file you want to use.
 
@@ -75,23 +64,58 @@ After that you can just type make to build the code.
         gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -I eMPL -I glue -c mpu9150/mpu9150.c
         gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c mpu9150/quaternion.c
         gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c mpu9150/vector3d.c
-        gcc -Wall -I eMPL -I glue -I mpu9150 -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c main.c
-        gcc -Wall inv_mpu.o inv_mpu_dmp_motion_driver.o linux_glue.o mpu9150.o quaternion.o vector3d.o main.o -lm -o imu 
+        gcc -Wall -I eMPL -I glue -I mpu9150 -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c imu.c
+        gcc -Wall inv_mpu.o inv_mpu_dmp_motion_driver.o linux_glue.o mpu9150.o quaternion.o vector3d.o imu.o -lm -o imu
+        gcc -Wall -I eMPL -I glue -I mpu9150 -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -c imucal.c
+        gcc -Wall inv_mpu.o inv_mpu_dmp_motion_driver.o linux_glue.o mpu9150.o quaternion.o vector3d.o imucal.o -lm -o imucal
 
 
-The resulting executable is called *imu*.
+The result is two executables called *imu* and *imucal*.
+
 
   Enable i2c
 ========
 
-Take a look at /etc/modules to see that the following two lines are present:
+ Raspberry Pi
+------
+
+The RPi Raspbian distribution does not load the I2C kernel drivers by default.
+
+You can check with this command:
+
+        pi@raspberrypi:~/linux-mpu9150$ dmesg | grep i2c
+        [   15.683106] i2c /dev entries driver
+        [   15.767128] bcm2708_i2c bcm2708_i2c.0: BSC0 Controller at 0x20205000 (irq 79) (baudrate 100k)
+        [   15.785938] bcm2708_i2c bcm2708_i2c.1: BSC1 Controller at 0x20804000 (irq 79) (baudrate 100k)
+
+If you don't see output like the above, edit */etc/modules* and add these lines
 
         i2c-bcm2708
         i2c-dev
 
-If not, add them! 
+The I2C device on the RPi P1 header will be /dev/i2c-1.
 
-To avoid having to use sudo to run the code, create a file:
+
+ Gumstix
+------
+
+The I2C kernel driver for the Gumstix boards is usually loaded by default.
+
+The I2C device on the Gumstix Overo expansion header is /dev/i2c-3.
+
+On the Duovero the device it is /dev/i2c-2.
+
+
+ Any System
+------
+
+The permissions on the /dev/i2c-X device are usually set so that only the
+root user has permissions.
+
+To avoid having to use sudo to run the code a udev rule can be used to
+change the permissions on startup.
+
+Create a file:
 
         /etc/udev/rules.d/90-i2c.rules
 
@@ -99,12 +123,110 @@ and add the line:
 
         KERNEL=="i2c-[0-3]",MODE="0666"
 
-then reboot to make sure everything is set correctly.
+
+Reboot to make sure everything is set correctly.
+
+If you are running as root you don't need the udev rule.
+
+
+  Calibration
+========
+
+The IMU gyros have a built in calibration mechanism, but the accelerometers
+and the magnetometer require manual calibration.
+
+Calibration, particularly magnetometer calibrations, is a complicated topic.
+We've provided a simple utility application called *imucal* that can get you
+started.
+
+        pi@raspberrypi:~/linux-mpu9150$ ./imucal -h
+         
+        Usage: ./imucal <-a | -m> [options]
+          -b <i2c-bus>          The I2C bus number where the IMU is. The default is 1 for /dev/i2c-1.
+          -s <sample-rate>      The IMU sample rate in Hz. Range 2-50, default 10.
+          -a                    Accelerometer calibration
+          -m                    Magnetometer calibration
+                                Accel and mag modes are mutually exclusive, but one must be chosen.
+          -f <cal-file>         Where to save the calibration file. Default ./<mode>cal.txt
+          -h                    Show this help
+        
+        Example: ./imucal -b3 -s20 -a
+
+You'll need to run this utility twice, once for the accelerometers and
+again for the magnetometer.
+
+Here is how to generate accelerometer calibration data on an RPi. 
+The default bus and sample rate are used.
+
+        pi@raspberrypi:~/linux-mpu9150$ ./imucal -a
+        
+        Initializing IMU .......... done
+        
+        
+        Entering read loop (ctrl-c to exit)
+        
+        X -16368|16858|16858    Y -16722|-2490|16644    Z -17362|-562|17524             ^C
+
+
+The numbers shown are min|current|max for each of the axes.
+
+What you want to do is slowly move the RPi/imu through all orientations
+in 3-axes. Slow is the the key. We are trying to measure gravity only
+and sudden movements will induce unwanted accelerations.
+
+The values will update whenever there is a change in one of the min/max
+values, so when you see no more changes you can enter ctrl-c to exit
+the program.
+
+When it finishes, the program will create an *accelcal.txt* file
+recording the min/max values.
+
+        pi@raspberrypi:~/linux-mpu9150$ cat accelcal.txt 
+        -16368
+        16858
+        -16722
+        16644
+        -17362
+        17524
+
+
+Do the same thing for the magnetometers running *imucal* with the -m switch.
+
+        pi@raspberrypi:~/linux-mpu9150$ ./imucal -m
+        
+        Initializing IMU .......... done
+        
+        
+        Entering read loop (ctrl-c to exit)
+        
+        X -179|-54|121    Y -154|199|199    Z -331|-124|15             ^C
+
+
+Again move the device through different orientations until you stop seeing
+changes. You can move faster during this calibration since we aren't looking
+at accelerations. 
+
+After ending the program with ctrl-c, a calibration file called *magcal.txt*
+will be written.
+
+        pi@raspberrypi:~/linux-mpu9150$ cat magcal.txt 
+        -179
+        121
+        -154
+        199
+        -331
+        15
+
+
+If these two files, *accelcal.txt* and *magcal.txt*, are left in the
+same directory as the *imu* program, they will be used by default.
+
 
   Run
 ========
 
-There are just a few parameters at present.
+The *imu* application is a small example to get started using 
+*linux-mpu9150* code.
 
         pi@raspberrypi ~/linux-mpu9150 $ ./imu -h
 
@@ -116,12 +238,17 @@ There are just a few parameters at present.
                                 1 = mag only
                                 > 1 scaled mag adjustment of gyro data
                                 The default is 4.
+          -a <accelcal file>    Path to accelerometer calibration file. Default is ./accelcal.txt
+          -m <magcal file>      Path to mag calibration file. Default is ./magcal.txt
+          -v                    Verbose messages
           -h                    Show this help
 
         Example: ./imu -b3 -s20 -y10
 
 
-The defaults will work for an RPi.
+The defaults will work for an RPi with the two calibration files picked
+up automatically.
+
 
         pi@raspberrypi ~/linux-mpu9150 $ ./imu
 
@@ -131,4 +258,9 @@ The defaults will work for an RPi.
         Entering read loop (ctrl-c to exit)
 
          X: -2 Y: -62 Z: -4        ^C
+
+
+The default output of the imu program is the Euler angles, but other 
+outputs are available such as the fused quaternion and raw gyro, accel
+and mag values. See the source code.
 

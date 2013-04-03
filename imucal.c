@@ -65,7 +65,7 @@ void usage(char *argv_0)
 	printf("  -f <cal-file>         Where to save the calibration file. Default ./<mode>cal.txt\n");
 	printf("  -h                    Show this help\n");
 
-	printf("\nExample:\n\t%s -b3 -s20 -y10\n\n", argv_0);
+	printf("\nExample: %s -b3 -s20 -a\n\n", argv_0);
 	
 	exit(1);
 }
