@@ -26,7 +26,7 @@ We have our own boards incorporating the MPU9150s, but we also tested with the
 
 # Fetch
 
-Use git to fetch the linux-mpu9150 project. You may have to install *git* on your
+Use git to fetch the linux-mpu9150 project. You may have to install <code>git</code> on your
 system first.
 
 For RPi users running Raspbian, use this command
@@ -40,10 +40,10 @@ Then to clone the repository assuming you have an Internet connection
 
 # Build
 
-The linux-mpu9150 code is written in C. There is a make file called *Makefile-native*
+The linux-mpu9150 code is written in C. There is a make file called <code>Makefile-native</code>
 for use when building directly on the system.
 
-There is also a *Makefile-cross* makefile for use when using Yocto Project built
+There is also a <code>Makefile-cross</code> makefile for use when using Yocto Project built
 tools and cross-building linux-mpu9150 on a workstation. This is more for Gumstix
 and Beagle users.
 
@@ -53,7 +53,7 @@ A recommendation is to create a soft-link to the make file you want to use.
         root@duovero:~/linux-mpu9150$ ln -s Makefile-native Makefile
 
 
-After that you can just type *make* to build the code.
+After that you can just type <code>make</code> to build the code.
 
         root@duovero:~/linux-mpu9150$ make
         gcc -Wall -DEMPL_TARGET_LINUX -DMPU9150 -DAK8975_SECONDARY -I eMPL -I glue -c eMPL/inv_mpu.c
@@ -68,10 +68,10 @@ After that you can just type *make* to build the code.
         gcc -Wall inv_mpu.o inv_mpu_dmp_motion_driver.o linux_glue.o mpu9150.o quaternion.o vector3d.o imucal.o -lm -o imucal
 
 
-The result is two executables called *imu* and *imucal*.
+The result is two executables called <code>imu</code> and <code>imucal</code>.
 
-For those using *Makefile-cross*, you will need to export an environment variable
-called *OETMP* that points to your OE temp directory (TMPDIR in build/conf/local.conf).
+For those using <code>Makefile-cross</code>, you will need to export an environment variable
+called <code>OETMP</code> that points to your OE temp directory (TMPDIR in build/conf/local.conf).
 
 For example:
 
@@ -92,12 +92,12 @@ For example:
 
 ### local_defaults.h
 
-You can modify some default parameter settings in *local_defaults.h* to avoid
+You can modify some default parameter settings in <code>local_defaults.h</code> to avoid
 having to pass command line switches to the applications every run. 
 
-After modifying *local_defaults.h*, you will have to run *make* again. 
+After modifying <code>local_defaults.h</code>, you will have to run <code>make</code> again. 
 
-The defaults in  *local_defaults.h* are for the RPi.
+The defaults in  <code>local_defaults.h</code> are for the RPi.
 
 
 # Enable i2c
@@ -113,21 +113,21 @@ You can check with this command:
         [   15.767128] bcm2708_i2c bcm2708_i2c.0: BSC0 Controller at 0x20205000 (irq 79) (baudrate 100k)
         [   15.785938] bcm2708_i2c bcm2708_i2c.1: BSC1 Controller at 0x20804000 (irq 79) (baudrate 100k)
 
-If you don't see output like the above, edit */etc/modules* and add these lines
+If you don't see output like the above, edit <code>/etc/modules</code> and add these lines
 
         i2c-bcm2708
         i2c-dev
 
-The I2C device on the RPi P1 header will be /dev/i2c-1.
+The I2C device on the RPi P1 header will be <code>/dev/i2c-1</code>.
 
 
 ### Gumstix
 
 The I2C kernel driver for the Gumstix boards is usually loaded by default.
 
-The I2C device on the Gumstix Overo expansion header is /dev/i2c-3.
+The I2C device on the Gumstix Overo expansion header is <code>/dev/i2c-3</code>.
 
-On the Duovero the device it is /dev/i2c-2.
+On the Duovero the device it is <code>/dev/i2c-2</code>.
 
 
 ### Any System
@@ -158,7 +158,7 @@ The IMU gyros have a built in calibration mechanism, but the accelerometers
 and the magnetometer require manual calibration.
 
 Calibration, particularly magnetometer calibrations, is a complicated topic.
-We've provided a simple utility application called *imucal* that can get you
+We've provided a simple utility application called <code>imucal</code> that can get you
 started.
 
         pi@raspberrypi:~/linux-mpu9150$ ./imucal -h
@@ -200,7 +200,7 @@ The values will update whenever there is a change in one of the min/max
 values, so when you see no more changes you can enter ctrl-c to exit
 the program.
 
-When it finishes, the program will create an *accelcal.txt* file
+When it finishes, the program will create an <code>accelcal.txt</code> file
 recording the min/max values.
 
         pi@raspberrypi:~/linux-mpu9150$ cat accelcal.txt 
@@ -212,7 +212,7 @@ recording the min/max values.
         17524
 
 
-Do the same thing for the magnetometers running *imucal* with the -m switch.
+Do the same thing for the magnetometers running <code>imucal</code> with the -m switch.
 
         pi@raspberrypi:~/linux-mpu9150$ ./imucal -m
         
@@ -228,7 +228,7 @@ Again move the device through different orientations in all three dimensions
 until you stop seeing changes. You can move faster during this calibration
 since we aren't looking at accelerations.
 
-After ending the program with ctrl-c, a calibration file called *magcal.txt*
+After ending the program with ctrl-c, a calibration file called <code>magcal.txt</code>
 will be written.
 
         pi@raspberrypi:~/linux-mpu9150$ cat magcal.txt 
@@ -240,14 +240,14 @@ will be written.
         15
 
 
-If these two files, *accelcal.txt* and *magcal.txt*, are left in the
-same directory as the *imu* program, they will be used by default.
+If these two files, <code>accelcal.txt</code> and <code>magcal.txt</code>, are left in the
+same directory as the <code>imu</code> program, they will be used by default.
 
 
 # Run
 
-The *imu* application is a small example to get started using 
-*linux-mpu9150* code.
+The <code>imu</code> application is a small example to get started using 
+<code>linux-mpu9150</code> code.
 
         pi@raspberrypi ~/linux-mpu9150 $ ./imu -h
 
@@ -281,13 +281,13 @@ up automatically.
          X: -2 Y: -62 Z: -4        ^C
 
 
-The default output of the *imu* program are the fused Euler angles.
+The default output of the <code>imu</code> program are the fused Euler angles.
 Other outputs are available such as the fused quaternion and the
 raw gyro, accel and mag values. See the source code.
 
-Keep in mind *imu* is just a demo app not optimized for any particular
-use. The idea is that you'll write your own program to replace *imu*.
+Keep in mind <code>imu</code> is just a demo app not optimized for any particular
+use. The idea is that you'll write your own program to replace <code>imu</code>.
 
-All of the functions in the Invensense SDK under the eMPL directory
-are available. See mpu9150/mpu9150.c for some examples.
+All of the functions in the Invensense SDK under the <code>eMPL</code> directory
+are available. See <code>mpu9150/mpu9150.c</code> for some examples.
 
