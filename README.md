@@ -192,8 +192,8 @@ The default bus and sample rate are used.
 
 The numbers shown are min|current|max for each of the axes.
 
-What you want to do is slowly move the RPi/imu through all orientations
-in 3-axes. Slow is the the key. We are trying to measure gravity only
+What you want to do is slowly move the RPi/imu through all orientations in
+three dimensions. Slow is the the key. We are trying to measure gravity only
 and sudden movements will induce unwanted accelerations.
 
 The values will update whenever there is a change in one of the min/max
@@ -224,9 +224,9 @@ Do the same thing for the magnetometers running *imucal* with the -m switch.
         X -179|-54|121    Y -154|199|199    Z -331|-124|15             ^C
 
 
-Again move the device through different orientations until you stop seeing
-changes. You can move faster during this calibration since we aren't looking
-at accelerations. 
+Again move the device through different orientations in all three dimensions
+until you stop seeing changes. You can move faster during this calibration
+since we aren't looking at accelerations.
 
 After ending the program with ctrl-c, a calibration file called *magcal.txt*
 will be written.
@@ -285,5 +285,9 @@ The default output of the *imu* program are the fused Euler angles.
 Other outputs are available such as the fused quaternion and the
 raw gyro, accel and mag values. See the source code.
 
-Keep in mind *imu* is just a demo app.
+Keep in mind *imu* is just a demo app not optimized for any particular
+use. The idea is that you'll write your own program to replace *imu*.
+
+All of the functions in the Invensense SDK under the eMPL directory
+are available. See mpu9150/mpu9150.c for some examples.
 
