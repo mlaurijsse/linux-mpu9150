@@ -54,7 +54,8 @@ inv_mpu_dmp_motion_driver.o : $(EMPLDIR)/inv_mpu_dmp_motion_driver.c
 inv_mpu.o : $(EMPLDIR)/inv_mpu.c
 	$(CC) $(CFLAGS) $(DEFS) -I $(EMPLDIR) -I $(GLUEDIR) -c $(EMPLDIR)/inv_mpu.c
 
-
 clean:
-	rm -f *.o imu imucal
+	rm -f *.o
 
+veryclean: clean
+	rm -f imu imucal
